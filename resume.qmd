@@ -1,0 +1,6 @@
+---
+title: "Resume"
+---
+
+{{< pdf resume/Resume-Jerry_Wu_4-4-25.pdf
+width=100% height=800 >}}
