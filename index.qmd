@@ -21,6 +21,4 @@ about:
 
 ### Education
 - MS in Business Analytics | UCSD Rady | 2025
-- BA in Management Science, Minor in Data Science | UCSD Rady | 2024
-:::
-:::
+- BS in Management Science, Minor in Data Science | UCSD Rady | 2024
