@@ -15,7 +15,6 @@ about:
 - MSBA Student | UC San Diego Rady School
 - Aspiring Data Scientist | Tech & Healthcare
 - Business Analytics Enthusiast
-
 ---
 
 ### Education
