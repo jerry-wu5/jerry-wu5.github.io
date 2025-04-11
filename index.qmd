@@ -12,21 +12,6 @@ about:
 
 ---
 
-<!-- ::: {.two-column-body}
-
-::: {.column-left}
-![Jerry Wu](images/Wu_Jerry.jpg){.profile-pic}
-
-### Jerry Wu
-
-<div class="icons">
-  <a href="mailto:jzwu@ucsd.edu">📧</a>
-  <a href="https://www.linkedin.com/in/jerry-wu5/">🔗</a>
-</div>
-::: -->
-
-::: {.column-right}
-
 ### Current
 - MSBA Student | UC San Diego Rady School
 - Aspiring Data Scientist | Tech & Healthcare
