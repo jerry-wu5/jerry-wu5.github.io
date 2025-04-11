@@ -9,7 +9,6 @@ about:
       href: mailto:jzwu@ucsd.edu
     - icon: linkedin
       href: https://www.linkedin.com/in/jerry-wu5/
-
 ---
 
 ### Current
@@ -21,4 +20,5 @@ about:
 
 ### Education
 - MS in Business Analytics | UCSD Rady | 2025
-- BS in Management Science, Minor in Data Science | UCSD Rady | 2024
+- BA in Management Science, Minor in Data Science | UCSD Rady | 2024
+
