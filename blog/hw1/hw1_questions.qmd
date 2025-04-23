@@ -421,10 +421,10 @@ axes = axes.flatten()
 
 for i, n in enumerate(sample_sizes):
     axes[i].hist(diff_distributions[n], bins=30, edgecolor='black', alpha=0.7)
-    axes[i].axvline(0, color='red', linestyle='--', label='Zero')
+    axes[i].axvline(0, color='black', linestyle='--', label='Zero')
     axes[i].set_title(f"Sample Size = {n}")
     axes[i].set_xlabel("Mean Difference (Treatment - Control)")
-    axes[i].axvline(p_treatment - p_control, color='black', linestyle='--', label='True Difference')
+    axes[i].axvline(p_treatment - p_control, color='red', linestyle='--', label='True Difference')
     axes[i].set_ylabel("Frequency")
     axes[i].legend()
 
