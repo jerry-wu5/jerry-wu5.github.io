@@ -208,7 +208,7 @@ print('Linear Regression: \n')
 print(f'Coefficient on Treatment: {coef}')
 print(f'p-value: {p_value_reg}')
 ```
-To test whether matched donations increase giving, I compared donation rates between the treatment and control groups using a t-test and a bivariate regression. The treatment group had a slightly higher donation rate (2.2% vs. 1.8%), and the difference was statistically significant in both tests. This matches results in Table 2A, Panel A of the original study and suggests that even a modest match offer can meaningfully boost donation rates. The finding highlights how small psychological nudges—like matching gifts—can influence charitable behavior.
+To test whether matched donations increase giving, I compared donation rates between the treatment and control groups using a t-test and a bivariate regression. The treatment group had a slightly higher donation rate (2.2% vs. 1.8%), and the difference was statistically significant in both tests. This matches results in Table 2A, Panel A of the original study and suggests that even a modest match offer can meaningfully boost donation rates. The finding highlights how small psychological nudges like matching gifts can influence charitable behavior.
 
 ```{python}
 import statsmodels.formula.api as smf
