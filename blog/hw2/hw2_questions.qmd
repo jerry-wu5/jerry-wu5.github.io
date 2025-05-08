@@ -16,19 +16,17 @@ However, Blueprinty has collected data on 1,500 mature (non-startup) engineering
 
 
 ### Data
-
-_todo: Read in data._
+We start by reading in the data from `blueprinty.csv`.
 ```{python}
 import pandas as pd
 df = pd.read_csv("blueprinty.csv")
 df.head()
 ```
 
-_todo: Compare histograms and means of number of patents by customer status. What do you observe?_
+We then compare histograms and means of number of patents by customer status.
 ```{python}
 import matplotlib.pyplot as plt
 
-# Separate data by customer status
 customers = df[df['iscustomer'] == 1]
 non_customers = df[df['iscustomer'] == 0]
 
@@ -55,24 +53,20 @@ This suggests that customer companies, on average, have more patents than non-cu
 
 Blueprinty customers are not selected at random. It may be important to account for systematic differences in the age and regional location of customers vs non-customers.
 
-_todo: Compare regions and ages by customer status. What do you observe?_
+We also then compare regions and ages by customer status. 
 ```{python}
 import seaborn as sns
-# Separate data by customer status
 customers = df[df['iscustomer'] == 1]
 non_customers = df[df['iscustomer'] == 0]
 
-# Set up the figure
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
-# Boxplot for age by customer status
 sns.boxplot(data=df, x='iscustomer', y='age', ax=axes[0])
 axes[0].set_title('Age by Customer Status')
 axes[0].set_xticks([0, 1])
 axes[0].set_xticklabels(['Non-Customers', 'Customers'])
 axes[0].set_ylabel('Age')
 
-# Bar plot for region by customer status
 region_counts = pd.crosstab(df['region'], df['iscustomer'])
 sorted_regions = region_counts[1].sort_values(ascending=False).index
 region_counts_sorted = region_counts.loc[sorted_regions]
@@ -84,11 +78,9 @@ axes[1].set_ylabel('Counts')
 plt.tight_layout()
 plt.show()
 
-# Calculate mean age by customer status
 mean_age_customers = customers['age'].mean()
 mean_age_non_customers = non_customers['age'].mean()
 
-# Customer proportions by region
 customer_region_counts = region_counts[1].sort_values(ascending=False)
 
 print(f'Customer Mean Age: {mean_age_customers}')
@@ -103,8 +95,6 @@ Customers tend to be slightly older than non-customers, with a mean age of 26.9 
 ### Estimation of Simple Poisson Model
 
 Since our outcome variable of interest can only be small integer values per a set unit of time, we can use a Poisson density to model the number of patents awarded to each engineering firm over the last 5 years. We start by estimating a simple Poisson model via Maximum Likelihood.
-
-_todo: Write down mathematically the likelihood for_ $Y \sim \text{Poisson}(\lambda)$. Note that $f(Y|\lambda) = e^{-\lambda}\lambda^Y/Y!$.
 
 We assume that \( Y_1, Y_2, \dots, Y_n \sim \text{Poisson}(\lambda) \). The probability mass function for each observation is:
 
@@ -137,20 +127,19 @@ from scipy.special import gammaln
 
 def poisson_loglikelihood(lambda_, Y):
     if lambda_ <= 0:
-        return -np.inf  # log-likelihood undefined for non-positive lambda
+        return -np.inf  
     return np.sum(Y * np.log(lambda_) - lambda_ - gammaln(Y + 1))
 ```
 
-The function `poisson_loglikelihood(lambda_, Y)` calculates the log-likelihood of observing a dataset of counts \(Y\) under a Poisson distribution with rate parameter \(\lambda\). It assumes that the counts are independent and identically distributed. The function first checks whether \(\lambda\) is positive, since the Poisson rate must be greater than zero, and returns negative infinity if it is not. It then computes the log-likelihood by summing the terms \(Y \cdot \log(\lambda) - \lambda - \log(Y!)\) across all observations. The `gammaln(Y + 1)` function is used to compute \(\log(Y!)\) in a numerically stable way. This implementation is useful for estimating \(\lambda\) using maximum likelihood estimation.
+The function `poisson_loglikelihood(lambda_, Y)` calculates the log-likelihood of observing a dataset of counts \(Y\) under a Poisson distribution with rate parameter $\lambda$. It assumes that the counts are independent and identically distributed. The function first checks whether $\lambda$ is positive, since the Poisson rate must be greater than zero, and returns negative infinity if it is not. It then computes the log-likelihood by summing the terms \(Y \cdot \log($\lambda$) - $\lambda$ - \log(Y!)\) across all observations. The `gammaln(Y + 1)` function is used to compute \(\log(Y!)\) in a numerically stable way. This implementation is useful for estimating $\lambda$ using maximum likelihood estimation.
 
-_todo: Use your function to plot lambda on the horizontal axis and the likelihood (or log-likelihood) on the vertical axis for a range of lambdas (use the observed number of patents as the input for Y)._
+We then use our function `poisson_loglikelihood(lambda_, Y)` to plot lambda on the horizontal axis and the log-likelihood on the vertical axis for a range of lambdas.
 
 ```{python}
 Y = df['patents']
 lambda_values = np.linspace(0.1, 10, 200)
 log_likelihoods = [poisson_loglikelihood(l, Y) for l in lambda_values]
 
-# Plot the log-likelihood function
 plt.figure(figsize=(10, 6))
 plt.plot(lambda_values, log_likelihoods, label='Log-Likelihood')
 plt.xlabel('Lambda (λ)')
@@ -161,11 +150,9 @@ plt.legend()
 plt.show()
 ```
 
-This plot shows the log likelihood function of a Poisson model for a range of \(\lambda\) values, using the observed number of patents as the input data. The horizontal axis represents different values of \(\lambda\), the rate parameter of the Poisson distribution, while the vertical axis shows the corresponding log likelihood values. The curve peaks at the value of \(\lambda\) that best fits the data, which is the maximum likelihood estimate (MLE). The shape of the curve illustrates how sensitive the likelihood is to changes in \(\lambda\), with values that are too low or too high producing a poorer fit. The MLE seems be around a \(\lambda\) value of 3.5.
+This plot shows the log likelihood function of a Poisson model for a range of $\lambda$ values, using the observed number of patents as the input data. The horizontal axis represents different values of $\lambda$, the rate parameter of the Poisson distribution, while the vertical axis shows the corresponding log likelihood values. The curve peaks at the value of $\lambda$ that best fits the data, which is the maximum likelihood estimate (MLE). The shape of the curve illustrates how sensitive the likelihood is to changes in $\lambda$, with values that are too low or too high producing a poorer fit. The MLE seems be around a $\lambda$ value of 3.5.
 
-_todo: If you're feeling mathematical, take the first derivative of your likelihood or log-likelihood, set it equal to zero and solve for lambda. You will find lambda_mle is Ybar, which "feels right" because the mean of a Poisson distribution is lambda._
-
-_todo: Find the MLE by optimizing your likelihood function with optim() in R or sp.optimize() in Python._
+ Deriving the MLE for the Poisson Rate Parameter λ Given that the log-likelihood function is: $$ \ell(\lambda) = \sum_{i=1}^n \left( Y_i \log \lambda - \lambda - \log Y_i! \right) $$ Take the derivative with respect to $\lambda$: $$ \frac{d\ell}{d\lambda} = \sum_{i=1}^n \left( \frac{Y_i}{\lambda} - 1 \right) = \frac{1}{\lambda} \sum_{i=1}^n Y_i - n $$ Set the derivative equal to 0: $$ \frac{1}{\lambda} \sum_{i=1}^n Y_i - n = 0 $$ Solve for $\lambda$: $$ \lambda = \frac{1}{n} \sum_{i=1}^n Y_i = \bar{Y} $$ Therefore, the maximum likelihood estimator (MLE) for $\lambda$ is the sample mean: $$ \lambda_{\text{MLE}} = \bar{Y} $$
 
 ```{python}
 from scipy.optimize import minimize
@@ -175,7 +162,6 @@ def neg_loglikelihood(lambda_, Y):
 
 initial_guess = [1.0]
 
-# Perform optimization
 result = minimize(neg_loglikelihood, x0=initial_guess, args=(Y,), bounds=[(0.01, None)])
 
 lambda_mle = result.x[0]
@@ -219,9 +205,9 @@ def poisson_regression_loglikelihood(beta, Y, X):
 
     return np.sum(Y * np.log(mu) - mu - gammaln(Y + 1))
 ```
-This function `poisson_regression_loglikelihood(beta, Y, X)` computes the log-likelihood for a Poisson regression model. Instead of assuming a constant rate \(\lambda\), it models the rate for each observation as \(\lambda_i = \exp(X_i' \beta)\), where \(X_i\) represents the covariates (such as age, region, and customer status) and \(\beta\) is the vector of coefficients. The function first calculates the linear predictor \(X \beta\), exponentiates it to obtain \(\lambda_i\), and then evaluates the log-likelihood by summing \(Y_i \log(\lambda_i) - \lambda_i - \log(Y_i!)\) across all observations. This approach allows the expected count to vary across firms based on their characteristics.
+This function `poisson_regression_loglikelihood(beta, Y, X)` computes the log-likelihood for a Poisson regression model. Instead of assuming a constant rate $\lambda$, it models the rate for each observation as $\lambda_i = \exp(X_i' \beta)$, where $X_i$ represents the covariates (such as age, region, and customer status) and $\beta$ is the vector of coefficients. The function first calculates the linear predictor $X \beta$, exponentiates it to obtain $\lambda_i$, and then evaluates the log-likelihood by summing $Y_i \log(lambda_i) - \lambda_i - \log(Y_i!)$ across all observations. This approach allows the expected count to vary across firms based on their characteristics.
 
-_todo: Use your function along with R's optim() or Python's sp.optimize() to find the MLE vector and the Hessian of the Poisson model with covariates. Specifically, the first column of X should be all 1's to enable a constant term in the model, and the subsequent columns should be age, age squared, binary variables for all but one of the regions, and the binary customer variable. Use the Hessian to find standard errors of the beta parameter estimates and present a table of coefficients and standard errors._
+We then use our function along with Python's sp.optimize() to find the MLE vector and the Hessian of the Poisson model with covariates.
 
 ```{python}
 import numpy as np
@@ -240,22 +226,18 @@ X_matrix = X.values
 def neg_loglikelihood(beta, Y, X):
     return -poisson_regression_loglikelihood(beta, Y, X)
 
-# Optimize to find MLE
 initial_beta = np.zeros(X_matrix.shape[1])
 result = minimize(neg_loglikelihood, x0=initial_beta, args=(Y, X_matrix), method='BFGS')
 
-# Extract MLE and Hessian inverse
 beta_mle = result.x
 hess_inv = result.hess_inv
-# Ensure Hessian inverse is array
+
 if not isinstance(hess_inv, np.ndarray):
     hess_inv = hess_inv.todense()
 hess_inv = np.asarray(hess_inv)
 
-# Compute standard errors
 std_errors = np.sqrt(np.diag(hess_inv))
 
-# Build results table
 results_df = pd.DataFrame({
     "Coefficient": beta_mle,
     "Std. Error": std_errors
@@ -263,24 +245,18 @@ results_df = pd.DataFrame({
 results_df
 ```
 
-_todo: Check your results using R's glm() function or Python sm.GLM() function._
+We then check our results with Python's sm.GLM() function.
 
 ```{python}
 import statsmodels.api as sm
 
-# Ensure all covariates are numeric
 X_numeric = X.astype(float)
 Y_numeric = Y.astype(float)
-
-# Or, equivalently, convert to numpy arrays:
-# X_numeric = X.values
-# Y_numeric = Y.values
 
 poisson_model = sm.GLM(Y_numeric, X_numeric, family=sm.families.Poisson())
 poisson_results = poisson_model.fit()
 print(poisson_results.summary())
 
-# And to extract coeffs and SEs:
 import pandas as pd
 result_table = pd.DataFrame({
     'coef': poisson_results.params,
@@ -289,12 +265,8 @@ result_table = pd.DataFrame({
 print(result_table)
 ```
 
-_todo: Interpret the results._
 
 Age has a strong nonlinear relationship with patent counts: each additional year of firm age increases the expected log count (coefficient 0.149, p < .001), but the negative age squared term (coefficient –0.003, p < .001) means that this benefit tapers off around 25 years of age before declining. Firms that are Blueprinty customers produce about 23 percent more patents than non-customers (exp(0.208)≈1.23, p < .001), all else equal. Once age and customer status are accounted for, none of the regions—Northeast, Northwest, South, or Southwest—differs significantly from the Midwest baseline. The model’s Cragg & Uhler pseudo R² of 0.136 indicates these predictors explain roughly 13.6 percent of the variation in patent counts.
-
-
-_todo: What do you conclude about the effect of Blueprinty's software on patent success? Because the beta coefficients are not directly interpretable, it may help to create two fake datasets: X_0 and X_1 where X_0 is the X data but with iscustomer=0 for every observation and X_1 is the X data but with iscustomer=1 for every observation. Then, use X_0 and your fitted model to get the vector of predicted number of patents (y_pred_0) for every firm in the dataset, and use X_1 to get Y_pred_1 for every firm. Then subtract y_pred_1 minus y_pred_0 and take the average of that vector of differences._
 
 ```{python}
 X_base = pd.concat([
@@ -303,7 +275,6 @@ X_base = pd.concat([
     region_dummies
 ], axis=1)
 
-# Create X_0 (iscustomer = 0) and X_1 (iscustomer = 1)
 X_0 = X_base.copy()
 X_0['iscustomer'] = 0
 X_0 = X_0[['intercept', 'age', 'age_squared', 'iscustomer'] + list(region_dummies.columns)]
@@ -312,23 +283,18 @@ X_1 = X_base.copy()
 X_1['iscustomer'] = 1
 X_1 = X_1[['intercept', 'age', 'age_squared', 'iscustomer'] + list(region_dummies.columns)]
 
-# Actual model matrix for fitting
 X_full = X_base.copy()
 X_full['iscustomer'] = df['iscustomer']
 X_full = X_full[['intercept', 'age', 'age_squared', 'iscustomer'] + list(region_dummies.columns)]
 
-# Response variable
 Y = df['patents'].astype(float)
 
-# Fit the Poisson regression model
 model = sm.GLM(Y, X_full.astype(float), family=sm.families.Poisson())
 result = model.fit()
 
-# Predict number of patents under both scenarios
 y_pred_0 = result.predict(X_0.astype(float))
 y_pred_1 = result.predict(X_1.astype(float))
 
-# Compute average treatment effect
 average_effect = np.mean(y_pred_1 - y_pred_0)
 average_effect
 ```
@@ -359,9 +325,7 @@ AirBnB is a popular platform for booking short-term rentals. In March 2017, stud
     - `instant_bookable` = "t" if instantly bookable, "f" if not
 
 ::::
-
-
-_todo: Assume the number of reviews is a good proxy for the number of bookings. Perform some exploratory data analysis to get a feel for the data, handle or drop observations with missing values on relevant variables, build one or more models (e.g., a poisson regression model for the number of bookings as proxied by the number of reviews), and interpret model coefficients to describe variation in the number of reviews as a function of the variables provided._
+EDA: 
 
 ```{python}
 df = pd.read_csv("airbnb.csv")
@@ -369,7 +333,22 @@ df.describe(include='all')
 ```
 
 ```{python}
-df.isna().sum()
+missing_values = df.isna().sum()
+
+missing_values = missing_values[missing_values > 0]
+
+plt.figure(figsize=(10, 6))
+missing_values.plot(kind='bar')
+plt.title('Missing Values per Column')
+plt.xlabel('Columns')
+plt.ylabel('Number of Missing Values')
+plt.xticks(rotation=45)
+plt.grid(axis='y')
+plt.tight_layout()
+plt.show()
+
+print("Missing Values:")
+print(missing_values)
 ```
 - `host_since`: 35 missing
 
@@ -383,6 +362,7 @@ df.isna().sum()
 
 - `value`: 10,256 missing
 
+We then built a poisson regression model for the number of bookings as proxied by the number of reviews.
 ```{python}
 columns_required = [
     'days', 'room_type', 'bathrooms', 'bedrooms', 'price',
@@ -391,31 +371,27 @@ columns_required = [
 ]
 df_clean = df.dropna(subset=columns_required)
 
-# Step 2: Create dummy variables
 df_clean = pd.get_dummies(df_clean, columns=['room_type', 'instant_bookable'], drop_first=True)
 
-# Step 3: Prepare feature matrix X and target vector Y
 X = df_clean[[
     'days', 'bathrooms', 'bedrooms', 'price',
     'review_scores_cleanliness', 'review_scores_location', 'review_scores_value',
     'room_type_Private room', 'room_type_Shared room', 'instant_bookable_t'
 ]]
-X = sm.add_constant(X)  # Add intercept term
+X = sm.add_constant(X)  
 Y = df_clean['number_of_reviews']
 
 X = X.astype(float)
 Y = Y.astype(float)
 
-# Step 4: Fit Poisson regression model
 model = sm.GLM(Y, X, family=sm.families.Poisson())
 result = model.fit()
 
-# Step 5: Display coefficients and standard errors
 results_df = pd.DataFrame({
     'Coefficient': result.params,
     'Std. Error': result.bse
 })
-results_df
+print(results_df)
 ```
 We dropped rows with missing values for modeling, created dummy variables for room_type and instant_bookable, and fit a Poisson regression model with number_of_reviews as the outcome.
 
