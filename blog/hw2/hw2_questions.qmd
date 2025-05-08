@@ -114,13 +114,6 @@ $$
 L(\lambda) = \frac{e^{-n\lambda} \lambda^{\sum Y_i}}{\prod Y_i!}
 $$
 
-_todo: Code the likelihood (or log-likelihood) function for the Poisson model. This is a function of lambda and Y. For example:_
-
-```
-poisson_loglikelihood <- function(lambda, Y){
-   ...
-}
-```
 ```{python}
 import numpy as np
 from scipy.special import gammaln
@@ -173,14 +166,6 @@ The optimized MLE is approximately 3.68.
 ### Estimation of Poisson Regression Model
 
 Next, we extend our simple Poisson model to a Poisson Regression Model such that $Y_i = \text{Poisson}(\lambda_i)$ where $\lambda_i = \exp(X_i'\beta)$. The interpretation is that the success rate of patent awards is not constant across all firms ($\lambda$) but rather is a function of firm characteristics $X_i$. Specifically, we will use the covariates age, age squared, region, and whether the firm is a customer of Blueprinty.
-
-_todo: Update your likelihood or log-likelihood function with an additional argument to take in a covariate matrix X. Also change the parameter of the model from lambda to the beta vector. In this model, lambda must be a positive number, so we choose the inverse link function g_inv() to be exp() so that_ $\lambda_i = e^{X_i'\beta}$. _For example:_
-
-```
-poisson_regression_likelihood <- function(beta, Y, X){
-   ...
-}
-```
 
 ```{python}
 import numpy as np
