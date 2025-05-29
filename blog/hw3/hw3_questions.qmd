@@ -318,6 +318,7 @@ plt.ylabel("Frequency")
 
 plt.tight_layout()
 plt.show()
+
 ```
 
 The trace plot for the `brand_N` parameter shows good mixing and stability across iterations, indicating that the MCMC sampler has converged and is effectively exploring the posterior distribution. There are no visible trends or autocorrelation patterns, which supports the reliability of the sampling process. The histogram of the posterior distribution is approximately bell-shaped and centered around 0.95, suggesting a strong and consistent positive effect of the `brand_N` attribute on choice probability across sampled draws. This reinforces the conclusion that respondents significantly prefer brand N over the baseline brand.
