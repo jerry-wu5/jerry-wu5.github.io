@@ -1,0 +1,307 @@
+---
+title: "K-Means and K Nearest Neighbors"
+author: "Jerry Wu"
+date: today
+---
+
+## 1a. K-Means
+
+In this section, I implemented the K-Means clustering algorithm from scratch and tested it on the Palmer Penguins dataset using two numerical features: `bill_length_mm` and `flipper_length_mm`. The custom implementation includes steps for centroid initialization, cluster assignment, centroid updating, and calculation of within-cluster sum of squares (WCSS). I then evaluated clustering performance across different values of K (from 2 to 7) using both WCSS and silhouette scores. To validate the custom implementation, I compared the results with the built-in `KMeans` function from scikit-learn. The results show that both implementations behave similarly, and visualizations of WCSS and silhouette scores help identify the optimal number of clusters. This analysis provides insights into how well the data naturally groups into clusters and reinforces the value of silhouette and WCSS as clustering evaluation metrics.
+
+```{python}
+import pandas as pd
+penguins_df = pd.read_csv("palmer_penguins.csv")
+
+# Clean and filter the dataset: keep only bill_length_mm and flipper_length_mm, drop missing values
+penguins_filtered = penguins_df[['bill_length_mm', 'flipper_length_mm']].dropna()
+penguins_filtered.head()
+```
+```{python}
+X_penguins = penguins_filtered.values
+```
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Custom K-Means implementation
+def initialize_centroids(X, k):
+    indices = np.random.choice(len(X), k, replace=False)
+    return X[indices]
+
+def assign_clusters(X, centroids):
+    distances = np.linalg.norm(X[:, np.newaxis] - centroids, axis=2)
+    return np.argmin(distances, axis=1)
+
+def update_centroids(X, labels, k):
+    return np.array([X[labels == i].mean(axis=0) for i in range(k)])
+
+def compute_wcss(X, labels, centroids):
+    return sum(np.sum((X[labels == i] - centroids[i]) ** 2) for i in range(len(centroids)))
+
+# Run K-Means from scratch for K = 2 to 7
+from sklearn.metrics import silhouette_score
+from sklearn.cluster import KMeans
+
+wcss_vals = []
+silhouette_vals = []
+K_range = range(2, 8)
+
+for k in K_range:
+    centroids = initialize_centroids(X_penguins, k)
+    for _ in range(10):
+        labels = assign_clusters(X_penguins, centroids)
+        centroids = update_centroids(X_penguins, labels, k)
+
+    wcss = compute_wcss(X_penguins, labels, centroids)
+    wcss_vals.append(wcss)
+
+    if len(np.unique(labels)) > 1:
+        silhouette = silhouette_score(X_penguins, labels)
+        silhouette_vals.append(silhouette)
+    else:
+        silhouette_vals.append(np.nan)
+
+# Also compute sklearn KMeans for comparison
+kmeans_models = [KMeans(n_clusters=k, n_init=10, random_state=0).fit(X_penguins) for k in K_range]
+wcss_sklearn = [model.inertia_ for model in kmeans_models]
+silhouette_sklearn = [silhouette_score(X_penguins, model.labels_) for model in kmeans_models]
+
+print("K-Means")
+print("K\tWCSS (Custom)\tSilhouette (Custom)")
+for i, k in enumerate(K_range):
+    silhouette = f"{silhouette_vals[i]:.3f}" if not np.isnan(silhouette_vals[i]) else "NaN"
+    print(f"{k}\t{wcss_vals[i]:.2f}\t\t{silhouette}")
+
+print("\nK\tWCSS (sklearn)\tSilhouette (sklearn)")
+for i, k in enumerate(K_range):
+    print(f"{k}\t{wcss_sklearn[i]:.2f}\t\t{silhouette_sklearn[i]:.3f}")
+
+
+plt.figure(figsize=(14, 6))
+
+plt.subplot(1, 2, 1)
+plt.plot(K_range, wcss_vals, marker='o', label="WCSS (Custom)")
+plt.plot(K_range, wcss_sklearn, marker='x', linestyle='--', label="WCSS (sklearn)")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("WCSS")
+plt.title("Within-Cluster Sum of Squares")
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(K_range, silhouette_vals, marker='o', label="Silhouette (Custom)")
+plt.plot(K_range, silhouette_sklearn, marker='x', linestyle='--', label="Silhouette (sklearn)")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("Silhouette Score")
+plt.title("Silhouette Scores")
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+```
+Based on the evaluation of both within-cluster sum of squares (WCSS) and silhouette scores for values of K ranging from 2 to 7, the optimal number of clusters appears to be **K = 3**. While the silhouette score is highest at K = 2, suggesting strong cohesion and separation, this may overly simplify the data into just two broad groups. K = 3 provides a more detailed segmentation while still maintaining a relatively high silhouette score and a substantial drop in WCSS, indicating a good trade-off between compactness and separation of clusters. Thus, K = 3 is suggested as the most appropriate choice by these two metrics.
+
+```{python}
+import matplotlib.animation as animation
+# Re-run K-Means step-by-step for K=3
+k = 3
+X = X_penguins
+centroids = [initialize_centroids(X, k)]
+labels_list = []
+
+for _ in range(10):
+    labels = assign_clusters(X, centroids[-1])
+    new_centroids = update_centroids(X, labels, k)
+    labels_list.append(labels)
+    centroids.append(new_centroids)
+
+# Create the animation
+fig, ax = plt.subplots(figsize=(7, 6))
+
+def animate(i):
+    ax.clear()
+    labels = labels_list[i]
+    current_centroids = centroids[i]
+    for j in range(k):
+        cluster_points = X[labels == j]
+        ax.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {j+1}', alpha=0.6)
+        ax.scatter(*current_centroids[j], color='black', marker='x', s=100, linewidths=3)
+    ax.set_title(f"K-Means Iteration {i+1}")
+    ax.set_xlabel("Bill Length (mm)")
+    ax.set_ylabel("Flipper Length (mm)")
+    ax.legend()
+
+ani = animation.FuncAnimation(fig, animate, frames=len(labels_list), interval=800, repeat_delay=1000)
+
+gif_path = "kmeans_penguins.gif"
+ani.save(gif_path, writer='pillow')
+plt.close(fig)
+
+from IPython.display import display, HTML
+display(HTML('<img src="kmeans_penguins.gif" alt="KMeans Animation" />'))
+```
+
+## 2a. K Nearest Neighbors
+To evaluate the k-nearest neighbors (KNN) algorithm, I generated a synthetic dataset with two features (`x1`, `x2`) and a binary outcome `y`, where the class label is determined by whether `x2` lies above or below a wiggly boundary defined by `sin(4x1) + x1`. The training dataset was visualized with points colored by class and the true decision boundary clearly drawn. A separate test dataset of 100 points was created using a different random seed to ensure independence. I implemented KNN from scratch and verified its correctness by comparing predictions with those from `scikit-learn`’s `KNeighborsClassifier`. The results were identical across all `k` values. I evaluated model performance for `k = 1` to `30`, recording the percentage of correctly classified test points. Accuracy was plotted against `k`, and the optimal value was found to be **k = 1**, achieving a **95% test accuracy**. This highlights how a low `k` can capture fine-grained decision boundaries in data with nonlinear separability.
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+import pandas as pd
+
+np.random.seed(42)
+
+def generate_dataset(n=100, seed=42):
+    """Generate synthetic dataset with wiggly boundary"""
+    np.random.seed(seed)
+    
+    # Generate random points
+    x1 = np.random.uniform(-3, 3, n)
+    x2 = np.random.uniform(-3, 3, n)
+    
+    # Define wiggly boundary
+    boundary = np.sin(4 * x1) + x1
+    
+    # Binary classification based on boundary
+    y = (x2 > boundary).astype(int)
+    
+    return x1, x2, y, boundary
+
+def plot_dataset(x1, x2, y, boundary=None, title="Dataset"):
+    """Plot the dataset with optional boundary"""
+    plt.figure(figsize=(10, 8))
+    
+    # Plot points colored by class
+    colors = ['red', 'blue']
+    labels = ['Class 0', 'Class 1']
+    
+    for i in [0, 1]:
+        mask = y == i
+        plt.scatter(x1[mask], x2[mask], c=colors[i], label=labels[i], alpha=0.7, s=50)
+    
+    if boundary is not None:
+        # Sort by x1 for smooth boundary line
+        sorted_idx = np.argsort(x1)
+        plt.plot(x1[sorted_idx], boundary[sorted_idx], 'black', linewidth=2, label='True Boundary')
+    
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.axis('equal')
+    plt.show()
+
+def euclidean_distance(point1, point2):
+    """Calculate Euclidean distance between two points"""
+    return np.sqrt(np.sum((point1 - point2) ** 2))
+
+def knn_predict(X_train, y_train, X_test, k):
+    """
+    Hand-implemented KNN classifier
+    
+    Parameters:
+    X_train: Training features (n_samples, n_features)
+    y_train: Training labels (n_samples,)
+    X_test: Test features (m_samples, n_features)
+    k: Number of neighbors
+    
+    Returns:
+    predictions: Predicted labels for test set
+    """
+    predictions = []
+    
+    for test_point in X_test:
+        # Calculate distances to all training points
+        distances = []
+        for i, train_point in enumerate(X_train):
+            dist = euclidean_distance(test_point, train_point)
+            distances.append((dist, y_train[i]))
+        
+        # Sort by distance and get k nearest neighbors
+        distances.sort(key=lambda x: x[0])
+        k_nearest = distances[:k]
+        
+        # Get labels of k nearest neighbors
+        neighbor_labels = [label for _, label in k_nearest]
+        
+        # Predict based on majority vote
+        prediction = max(set(neighbor_labels), key=neighbor_labels.count)
+        predictions.append(prediction)
+    
+    return np.array(predictions)
+
+# Generate training dataset
+print("Generating training dataset...")
+x1_train, x2_train, y_train, boundary_train = generate_dataset(n=100, seed=42)
+X_train = np.column_stack((x1_train, x2_train))
+
+# Plot training dataset
+plot_dataset(x1_train, x2_train, y_train, boundary_train, "Training Dataset")
+
+# Generate test dataset with different seed
+print("Generating test dataset...")
+x1_test, x2_test, y_test, boundary_test = generate_dataset(n=100, seed=123)
+X_test = np.column_stack((x1_test, x2_test))
+
+# Test KNN implementation for different k values
+k_values = range(1, 31)
+accuracies_custom = []
+accuracies_sklearn = []
+
+print("Testing KNN for k = 1 to 30...")
+
+for k in k_values:
+    # Custom KNN implementation
+    y_pred_custom = knn_predict(X_train, y_train, X_test, k)
+    accuracy_custom = accuracy_score(y_test, y_pred_custom)
+    accuracies_custom.append(accuracy_custom)
+    
+    # Sklearn KNN for comparison
+    knn_sklearn = KNeighborsClassifier(n_neighbors=k)
+    knn_sklearn.fit(X_train, y_train)
+    y_pred_sklearn = knn_sklearn.predict(X_test)
+    accuracy_sklearn = accuracy_score(y_test, y_pred_sklearn)
+    accuracies_sklearn.append(accuracy_sklearn)
+    
+    print(f"k={k:2d}: Custom KNN = {accuracy_custom:.3f}, Sklearn KNN = {accuracy_sklearn:.3f}")
+
+# Verify implementations match
+print(f"\nImplementations match: {np.allclose(accuracies_custom, accuracies_sklearn)}")
+
+# Plot accuracy vs k
+plt.figure(figsize=(12, 6))
+plt.plot(k_values, [acc * 100 for acc in accuracies_custom], 'bo-', label='Custom KNN', linewidth=2)
+plt.plot(k_values, [acc * 100 for acc in accuracies_sklearn], 'r*--', label='Sklearn KNN', alpha=0.7)
+plt.xlabel('k (Number of Neighbors)')
+plt.ylabel('Accuracy (%)')
+plt.title('KNN Accuracy vs k Value')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.xticks(range(1, 31, 2))
+plt.show()
+
+# Find optimal k
+optimal_k = k_values[np.argmax(accuracies_custom)]
+max_accuracy = max(accuracies_custom)
+
+print(f"\nOptimal k value: {optimal_k}")
+print(f"Maximum accuracy: {max_accuracy:.3f} ({max_accuracy*100:.1f}%)")
+
+# Create summary table
+results_df = pd.DataFrame({
+    'k': k_values,
+    'Custom_KNN_Accuracy': [f"{acc:.3f}" for acc in accuracies_custom],
+    'Sklearn_KNN_Accuracy': [f"{acc:.3f}" for acc in accuracies_sklearn]
+})
+
+print(f"\nSummary of first 10 k values:")
+print(results_df.head(10).to_string(index=False))
+```
+
+
+
+
+
